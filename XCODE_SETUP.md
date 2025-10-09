@@ -8,7 +8,7 @@ The `SupportHomeViewController.swift` file was created but needs to be properly 
 
 ### **1. Open Xcode Project**
 ```bash
-cd "/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk/Example"
+cd yourgpt-widget-sdk-ios/Example
 open YourGPTExample.xcodeproj
 ```
 
@@ -17,7 +17,7 @@ open YourGPTExample.xcodeproj
 #### **Method A: Using Xcode GUI (Recommended)**
 1. **Right-click** on the `YourGPTExample` folder in Xcode's Project Navigator
 2. Select **"Add Files to 'YourGPTExample'..."**
-3. Navigate to: `/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk/Example/YourGPTExample/`
+3. Navigate to: `Example/YourGPTExample/`
 4. Select **`SupportHomeViewController.swift`**
 5. Make sure these options are selected:
    - ✅ **"Add to target: YourGPTExample"**
@@ -25,7 +25,7 @@ open YourGPTExample.xcodeproj
 6. Click **"Add"**
 
 #### **Method B: Drag and Drop**
-1. Open **Finder** and navigate to: `/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk/Example/YourGPTExample/`
+1. Open **Finder** and navigate to: `yourgpt-widget-sdk-ios/Example/YourGPTExample/`
 2. **Drag** `SupportHomeViewController.swift` into Xcode's Project Navigator
 3. Drop it in the `YourGPTExample` folder
 4. In the dialog that appears:
@@ -108,7 +108,7 @@ After successful setup, you should see:
 
 ### **Source File Location**
 ```
-/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk/Example/YourGPTExample/SupportHomeViewController.swift
+yourgpt-widget-sdk-ios/Example/YourGPTExample/SupportHomeViewController.swift
 ```
 
 ### **Target Project Structure**

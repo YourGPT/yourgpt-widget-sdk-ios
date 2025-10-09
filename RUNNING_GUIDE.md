@@ -25,7 +25,7 @@ xcrun simctl list devices
 
 ### **Step 1: Navigate to Project Directory**
 ```bash
-cd "/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk"
+cd yourgpt-widget-sdk-ios
 ```
 
 ### **Step 2: Open Xcode Project**
@@ -284,7 +284,7 @@ If you prefer command line:
 
 ```bash
 # Navigate to project
-cd "/Users/superman41/Drive/AI/Widget Mobile SDK/ios-sdk/Example"
+cd yourgpt-widget-sdk-ios/Example
 
 # Build for simulator
 xcodebuild -project YourGPTExample.xcodeproj -scheme YourGPTExample -destination 'platform=iOS Simulator,name=iPhone 15 Pro' clean build

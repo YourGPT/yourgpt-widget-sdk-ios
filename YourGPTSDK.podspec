@@ -9,7 +9,7 @@ Pod::Spec.new do |spec|
   spec.author        = { "YourGPT" => "support@yourgpt.ai" }
   
   spec.platform      = :ios, "12.0"
-  spec.source        = { :git => "https://github.com/yourgpt/ios-sdk.git", :tag => "#{spec.version}" }
+  spec.source        = { :git => "https://github.com/YourGPT/yourgpt-widget-sdk-ios.git", :tag => "#{spec.version}" }
   
   spec.source_files  = "Sources/**/*.{swift,h,m}"
   spec.frameworks    = "UIKit", "WebKit"

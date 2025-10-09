@@ -34,8 +34,9 @@ pod setup
 
 ### 2. Clone and Setup SDK
 ```bash
-# Navigate to iOS SDK directory
-cd ios-sdk
+# Clone the repository
+git clone https://github.com/YourGPT/yourgpt-widget-sdk-ios.git
+cd yourgpt-widget-sdk-ios
 
 # Open the example project
 open Example/YourGPTExample.xcodeproj
@@ -68,8 +69,8 @@ The example app is configured to use the local SDK source code:
 #### Swift Package Manager (Recommended)
 1. **Add Local Package**:
    - In Xcode: File → Add Package Dependencies
-   - Choose "Add Local..." 
-   - Select the `ios-sdk` folder
+   - Choose "Add Local..."
+   - Select the `yourgpt-widget-sdk-ios` folder
    - Add `YourGPTSDK` target to your app
 
 2. **Local Development**:
@@ -356,7 +357,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build and Test
       run: |
-        cd ios-sdk
         xcodebuild test -project Example/YourGPTExample.xcodeproj \
           -scheme YourGPTExample \
           -destination 'platform=iOS Simulator,name=iPhone 14'

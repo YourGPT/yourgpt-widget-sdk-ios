@@ -24,7 +24,7 @@ This error can occur if Xcode is showing stale error information or if there are
 
 4. **Command Line Clean (if above doesn't work):**
    ```bash
-   cd ios-sdk/Example
+   cd yourgpt-widget-sdk-ios/Example
    xcodebuild -project YourGPTExample.xcodeproj -scheme YourGPTExample clean
    ```
 
@@ -49,7 +49,7 @@ If you're still seeing the error:
 
 1. **Open project in Xcode:**
    ```bash
-   open ios-sdk/Example/YourGPTExample.xcodeproj
+   open yourgpt-widget-sdk-ios/Example/YourGPTExample.xcodeproj
    ```
 
 2. **Check the ViewController.swift file:**
@@ -113,7 +113,7 @@ If the error persists:
 
 4. **Command Line Build Test:**
    ```bash
-   cd ios-sdk/Example
+   cd yourgpt-widget-sdk-ios/Example
    xcodebuild -project YourGPTExample.xcodeproj -scheme YourGPTExample -configuration Debug build -destination "platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5"
    ```
    

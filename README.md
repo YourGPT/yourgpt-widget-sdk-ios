@@ -23,14 +23,14 @@ pod install
 
 Add the package dependency in Xcode:
 1. File → Add Package Dependencies
-2. Enter: `https://github.com/yourgpt/ios-sdk.git`
+2. Enter: `https://github.com/YourGPT/yourgpt-widget-sdk-ios.git`
 3. Select version `1.0.0`
 
 Or add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourgpt/ios-sdk.git", from: "1.0.0")
+    .package(url: "https://github.com/YourGPT/yourgpt-widget-sdk-ios.git", from: "1.0.0")
 ]
 ```
 
