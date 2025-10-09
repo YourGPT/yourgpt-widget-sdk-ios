@@ -78,27 +78,6 @@ public class YourGPTChatbotViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = .systemBackground
-        
-        // Setup navigation bar appearance for modal presentation
-        if let navigationController = navigationController {
-            navigationController.navigationBar.prefersLargeTitles = false
-            navigationItem.title = title ?? "AI Assistant"
-            
-            // Add a subtle separator line at the bottom of navigation bar
-            navigationController.navigationBar.setValue(true, forKey: "hidesShadow")
-            
-            // Modern iOS appearance
-            if #available(iOS 13.0, *) {
-                let appearance = UINavigationBarAppearance()
-                appearance.configureWithDefaultBackground()
-                appearance.backgroundColor = .systemBackground
-                appearance.shadowColor = .separator
-                appearance.shadowImage = UIImage()
-                
-                navigationController.navigationBar.standardAppearance = appearance
-                navigationController.navigationBar.scrollEdgeAppearance = appearance
-            }
-        }
     }
     
     private func setupSDKObserver() {

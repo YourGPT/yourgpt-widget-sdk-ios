@@ -9,17 +9,16 @@ public struct YourGPTSDK {
         try await core.initialize(config: config)
     }
     
-    public static func createChatbotViewController(
-        widgetUid: String,
-        userId: String? = nil,
-        authToken: String? = nil,
-        theme: YourGPTTheme = .light
-    ) -> YourGPTChatbotViewController {
+    public static func createChatbotViewController() -> YourGPTChatbotViewController {
+        guard let config = core.currentConfig else {
+            fatalError("SDK not initialized. Call YourGPTSDK.initialize(config:) first.")
+        }
+
         return YourGPTChatbotViewController(
-            widgetUid: widgetUid,
-            userId: userId,
-            authToken: authToken,
-            theme: theme
+            widgetUid: config.widgetUid,
+            userId: config.userId,
+            authToken: config.authToken,
+            theme: config.theme
         )
     }
     

@@ -10,7 +10,7 @@ public struct YourGPTSDKConfig {
         
         /// Constructs the full widget URL with the provided widget UID
         /// Format: https://widget.yourgpt.ai/{widgetUid}
-        /// Example: https://widget.yourgpt.ai/232d2602-7cbd-4f6a-87eb-21058599d594
+        /// Example: https://widget.yourgpt.ai/widget-uid
         public static func widgetURL(for widgetUid: String) -> String {
             return "\(widgetBase)/\(widgetUid)"
         }

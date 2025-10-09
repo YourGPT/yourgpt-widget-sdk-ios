@@ -1,16 +1,12 @@
 import UIKit
 import YourGPTSDK
-import Combine
 
 @available(iOS 13.0, *)
 class ViewController: UIViewController {
-    
+
     @IBOutlet weak var statusLabel: UILabel?
     @IBOutlet weak var openChatButton: UIButton?
-    
-    private var cancellables = Set<AnyCancellable>()
-    private var chatbotViewController: YourGPTChatbotViewController?
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -75,26 +71,15 @@ class ViewController: UIViewController {
     }
     
     private func setupSDKObserver() {
-        YourGPTSDK.core.$state
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                self?.updateUIForSDKState(state)
-            }
-            .store(in: &cancellables)
+        YourGPTWrapper.shared.onStateChange = { [weak self] state in
+            self?.updateUIForSDKState(state)
+        }
     }
     
     private func initializeSDK() {
-        let config = YourGPTConfig(
-            widgetUid: "232d2602-7cbd-4f6a-87eb-21058599d594",
-            userId: "demo-user-123",
-            authToken: "demo-auth-token",
-            theme: .light,
-            debug: true
-        )
-        
         Task {
             do {
-                try await YourGPTSDK.initialize(config: config)
+                try await YourGPTWrapper.shared.initializeSDK(widgetUid: "widget-uid")
             } catch {
                 await MainActor.run {
                     self.showAlert(title: "SDK Error", message: error.localizedDescription)
@@ -134,38 +119,7 @@ class ViewController: UIViewController {
     }
     
     @IBAction func openChatTapped(_ sender: UIButton? = nil) {
-        guard YourGPTSDK.isReady else {
-            showAlert(title: "SDK Not Ready", message: "Please wait for the SDK to initialize.")
-            return
-        }
-        
-        chatbotViewController = YourGPTSDK.createChatbotViewController(
-            widgetUid: "232d2602-7cbd-4f6a-87eb-21058599d594",
-            userId: "demo-user-123",
-            authToken: "demo-auth-token",
-            theme: .light
-        )
-        
-        chatbotViewController?.delegate = self
-        
-        let navigationController = UINavigationController(rootViewController: chatbotViewController!)
-        navigationController.modalPresentationStyle = .fullScreen
-        
-        // Add close button
-        let closeButton = UIBarButtonItem(
-            barButtonSystemItem: .done,
-            target: self,
-            action: #selector(closeChatTapped)
-        )
-        chatbotViewController?.navigationItem.rightBarButtonItem = closeButton
-        
-        present(navigationController, animated: true)
-    }
-    
-    @objc private func closeChatTapped() {
-        dismiss(animated: true) { [weak self] in
-            self?.chatbotViewController = nil
-        }
+        YourGPTWrapper.shared.openChatbot(from: self, delegate: self)
     }
     
     private func showAlert(title: String, message: String) {
@@ -197,9 +151,7 @@ extension ViewController: YourGPTChatbotDelegate {
     
     func chatbotDidClose() {
         print("📴 Chatbot closed")
-        dismiss(animated: true) { [weak self] in
-            self?.chatbotViewController = nil
-        }
+        YourGPTWrapper.shared.dismissChatbot()
     }
     
     func chatbotDidFailWithError(_ error: Error) {
