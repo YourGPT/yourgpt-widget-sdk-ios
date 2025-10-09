@@ -108,30 +108,15 @@ public class YourGPTSDKCore: ObservableObject {
         guard let config = config else {
             throw YourGPTError.notInitialized
         }
-        
+
         guard isReady else {
             throw YourGPTError.notReady
         }
-        
-        // Create config with additional params
-        var customParams = config.customParams
-        for (key, value) in additionalParams {
-            customParams[key] = value
-        }
-        
-        let configWithParams = YourGPTConfig(
-            widgetUid: config.widgetUid,
-            userId: config.userId,
-            authToken: config.authToken,
-            theme: config.theme,
-            debug: config.debug,
-            customParams: customParams
-        )
-        
-        guard let url = configWithParams.buildWidgetURL() else {
+
+        guard let url = config.buildWidgetURL() else {
             throw YourGPTError.invalidURL
         }
-        
+
         return url
     }
     
@@ -178,9 +163,8 @@ public class YourGPTSDKCore: ObservableObject {
     }
     
     private func log(_ message: String) {
-        if config?.debug == true {
-            print("[YourGPTSDK] \(message)")
-        }
+        // Logging disabled - can be enabled for debugging
+        // print("[YourGPTSDK] \(message)")
     }
     
     public func destroy() {

@@ -14,12 +14,7 @@ public struct YourGPTSDK {
             fatalError("SDK not initialized. Call YourGPTSDK.initialize(config:) first.")
         }
 
-        return YourGPTChatbotViewController(
-            widgetUid: config.widgetUid,
-            userId: config.userId,
-            authToken: config.authToken,
-            theme: config.theme
-        )
+        return YourGPTChatbotViewController(widgetUid: config.widgetUid)
     }
     
     public static func setUserContext(_ context: [String: Any]) async {

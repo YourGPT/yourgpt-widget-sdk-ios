@@ -71,10 +71,7 @@ class YourGPTWrapper: NSObject {
     
     private var cancellables = Set<AnyCancellable>()
     private var chatbotViewController: YourGPTChatbotViewController?
-    
-    // Configuration
-    private let widgetUid = "your-widget-uid"
-    
+
     // State observer
     var onStateChange: ((YourGPTSDKState) -> Void)?
     
@@ -92,11 +89,8 @@ class YourGPTWrapper: NSObject {
             .store(in: &cancellables)
     }
     
-    func initializeSDK() async throws {
-        let config = YourGPTConfig(
-            widgetUid: widgetUid
-        )
-        
+    func initializeSDK(widgetUid: String) async throws {
+        let config = YourGPTConfig(widgetUid: widgetUid)
         try await YourGPTSDK.initialize(config: config)
     }
     
@@ -106,23 +100,22 @@ class YourGPTWrapper: NSObject {
             return
         }
         
-        chatbotViewController = YourGPTSDK.createChatbotViewController(
-            widgetUid: widgetUid
-        )
-        
+        chatbotViewController = YourGPTSDK.createChatbotViewController()
+
         chatbotViewController?.delegate = delegate
-        
-        let navigationController = UINavigationController(rootViewController: chatbotViewController!)
-        navigationController.modalPresentationStyle = .fullScreen
-        
+
         // Add close button
         let closeButton = UIBarButtonItem(
-            barButtonSystemItem: .done,
+            barButtonSystemItem: .close,
             target: self,
             action: #selector(closeChatbot)
         )
         chatbotViewController?.navigationItem.rightBarButtonItem = closeButton
-        
+
+        let navigationController = UINavigationController(rootViewController: chatbotViewController!)
+        navigationController.modalPresentationStyle = .overCurrentContext
+        navigationController.modalTransitionStyle = .coverVertical
+
         presentingViewController.present(navigationController, animated: true)
     }
     
@@ -131,11 +124,17 @@ class YourGPTWrapper: NSObject {
             self?.chatbotViewController = nil
         }
     }
-    
+
+    func dismissChatbot() {
+        chatbotViewController?.dismiss(animated: true) { [weak self] in
+            self?.chatbotViewController = nil
+        }
+    }
+
     var isReady: Bool {
         return YourGPTSDK.isReady
     }
-    
+
     var currentState: YourGPTSDKState {
         return YourGPTSDK.core.state
     }
@@ -186,7 +185,7 @@ class ViewController: UIViewController {
     private func initializeSDK() {
         Task {
             do {
-                try await YourGPTWrapper.shared.initializeSDK()
+                try await YourGPTWrapper.shared.initializeSDK(widgetUid: "your-widget-uid")
             } catch {
                 await MainActor.run {
                     self.showAlert(title: "SDK Error", message: error.localizedDescription)
@@ -283,23 +282,11 @@ extension ViewController: YourGPTChatbotDelegate {
 }
 ```
 
-### Configuration Options
+### Configuration
 
-The `YourGPTConfig` supports various optional parameters:
+The `YourGPTConfig` only requires your widget UID:
 
 ```swift
-YourGPTConfig(
-    widgetUid: "your-widget-uid",    // Required: Your widget UID from YourGPT dashboard
-    userId: "user-123",              // Optional: Unique user identifier
-    authToken: "your-auth-token",    // Optional: Authentication token
-    theme: .light,                   // Optional: .light or .dark
-    debug: true,                     // Optional: Enable debug logging
-)
-```
-
-**Minimal Configuration:**
-```swift
-// Only widgetUid is required
 let config = YourGPTConfig(widgetUid: "your-widget-uid")
 ```
 

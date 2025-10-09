@@ -16,12 +16,9 @@ public class YourGPTChatbotViewController: UIViewController {
     // MARK: - Properties
     
     public weak var delegate: YourGPTChatbotDelegate?
-    
+
     private let widgetUid: String
-    private let userId: String?
-    private let authToken: String?
-    private let theme: YourGPTTheme
-    
+
     private var webView: WKWebView!
     private var webViewConfiguration: WKWebViewConfiguration!
     private let sdk = YourGPTSDKCore.shared
@@ -38,16 +35,8 @@ public class YourGPTChatbotViewController: UIViewController {
     
     // MARK: - Initialization
     
-    public init(
-        widgetUid: String,
-        userId: String? = nil,
-        authToken: String? = nil,
-        theme: YourGPTTheme = .light
-    ) {
+    public init(widgetUid: String) {
         self.widgetUid = widgetUid
-        self.userId = userId
-        self.authToken = authToken
-        self.theme = theme
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -92,15 +81,9 @@ public class YourGPTChatbotViewController: UIViewController {
     private func initializeSDK() {
         showLoadingView()
         delegate?.chatbotDidStartLoading()
-        
-        let config = YourGPTConfig(
-            widgetUid: widgetUid,
-            userId: userId,
-            authToken: authToken,
-            theme: theme,
-            debug: true
-        )
-        
+
+        let config = YourGPTConfig(widgetUid: widgetUid)
+
         Task {
             do {
                 try await sdk.initialize(config: config)

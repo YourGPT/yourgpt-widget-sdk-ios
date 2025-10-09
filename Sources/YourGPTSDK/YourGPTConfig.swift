@@ -47,57 +47,22 @@ public struct YourGPTSDKConfig {
 /// Configuration for initializing the SDK
 public struct YourGPTConfig {
     public let widgetUid: String
-    public let userId: String?
-    public let authToken: String?
-    public let theme: YourGPTTheme
-    public let debug: Bool
-    public let customParams: [String: String]
-    
-    public init(
-        widgetUid: String,
-        userId: String? = nil,
-        authToken: String? = nil,
-        theme: YourGPTTheme = YourGPTSDKConfig.Defaults.theme,
-        debug: Bool = YourGPTSDKConfig.Defaults.debug,
-        customParams: [String: String] = [:]
-    ) {
+
+    public init(widgetUid: String) {
         self.widgetUid = widgetUid
-        self.userId = userId
-        self.authToken = authToken
-        self.theme = theme
-        self.debug = debug
-        self.customParams = customParams
     }
-    
+
     /// Generates query parameters for the widget URL
     func toQueryItems() -> [URLQueryItem] {
         var items: [URLQueryItem] = []
-        
-        // Add theme
-        items.append(URLQueryItem(name: "theme", value: theme.rawValue))
-        
-        // Add user ID if provided
-        if let userId = userId {
-            items.append(URLQueryItem(name: "userId", value: userId))
-        }
-        
-        // Add auth token if provided
-        if let authToken = authToken {
-            items.append(URLQueryItem(name: "authToken", value: authToken))
-        }
-        
-        // Add custom parameters
-        for (key, value) in customParams {
-            items.append(URLQueryItem(name: key, value: value))
-        }
-        
+
         // Add SDK metadata
         items.append(URLQueryItem(name: "sdk", value: YourGPTSDKConfig.SDK.platform))
         items.append(URLQueryItem(name: "sdkVersion", value: YourGPTSDKConfig.SDK.version))
-        
+
         return items
     }
-    
+
     /// Generates the complete widget URL
     public func buildWidgetURL() -> URL? {
         return YourGPTSDKConfig.Endpoints.widgetURL(

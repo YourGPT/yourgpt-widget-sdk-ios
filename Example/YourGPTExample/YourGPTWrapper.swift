@@ -33,23 +33,8 @@ class YourGPTWrapper: NSObject {
             .store(in: &cancellables)
     }
 
-    func initializeSDK(
-        widgetUid: String,
-        userId: String? = nil,
-        authToken: String? = nil,
-        theme: YourGPTTheme = .light,
-        debug: Bool = false,
-        customParams: [String: String] = [:]
-    ) async throws {
-        let config = YourGPTConfig(
-            widgetUid: widgetUid,
-            userId: userId,
-            authToken: authToken,
-            theme: theme,
-            debug: debug,
-            customParams: customParams
-        )
-
+    func initializeSDK(widgetUid: String) async throws {
+        let config = YourGPTConfig(widgetUid: widgetUid)
         try await YourGPTSDK.initialize(config: config)
     }
 
