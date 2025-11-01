@@ -16,9 +16,9 @@ public class YourGPTChatbotViewController: UIViewController {
     // MARK: - Properties
     
     public weak var delegate: YourGPTChatbotDelegate?
-
+    
     private let widgetUid: String
-
+    
     private var webView: WKWebView!
     private var webViewConfiguration: WKWebViewConfiguration!
     private let sdk = YourGPTSDKCore.shared
@@ -35,7 +35,9 @@ public class YourGPTChatbotViewController: UIViewController {
     
     // MARK: - Initialization
     
-    public init(widgetUid: String) {
+    public init(
+        widgetUid: String
+    ) {
         self.widgetUid = widgetUid
         super.init(nibName: nil, bundle: nil)
     }
@@ -67,6 +69,27 @@ public class YourGPTChatbotViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = .systemBackground
+        
+        // Setup navigation bar appearance for modal presentation
+        if let navigationController = navigationController {
+            navigationController.navigationBar.prefersLargeTitles = false
+            navigationItem.title = title ?? "AI Assistant"
+            
+            // Add a subtle separator line at the bottom of navigation bar
+            navigationController.navigationBar.setValue(true, forKey: "hidesShadow")
+            
+            // Modern iOS appearance
+            if #available(iOS 13.0, *) {
+                let appearance = UINavigationBarAppearance()
+                appearance.configureWithDefaultBackground()
+                appearance.backgroundColor = .systemBackground
+                appearance.shadowColor = .separator
+                appearance.shadowImage = UIImage()
+                
+                navigationController.navigationBar.standardAppearance = appearance
+                navigationController.navigationBar.scrollEdgeAppearance = appearance
+            }
+        }
     }
     
     private func setupSDKObserver() {
@@ -81,9 +104,12 @@ public class YourGPTChatbotViewController: UIViewController {
     private func initializeSDK() {
         showLoadingView()
         delegate?.chatbotDidStartLoading()
-
-        let config = YourGPTConfig(widgetUid: widgetUid)
-
+        
+        let config = YourGPTConfig(
+            widgetUid: widgetUid,
+            debug: true
+        )
+        
         Task {
             do {
                 try await sdk.initialize(config: config)
@@ -286,25 +312,46 @@ public class YourGPTChatbotViewController: UIViewController {
     
     private func injectJavaScript() {
         let script = """
-            window.addEventListener('message', function(event) {
-                if (event.data && typeof event.data === 'object') {
-                    window.webkit.messageHandlers.YourGPTNative.postMessage(event.data);
-                }
+(function() {
+    window.addEventListener('message', function(event) {
+        console.log('Message received:', event.data);
+        if (event.data === 'chatbot-close') {
+            window.webkit.messageHandlers.YourGPTNative.postMessage({
+                type: 'chatbot-close',
+                source: 'widget'
             });
+        } else if (event.data && typeof event.data === 'object') {
+            window.webkit.messageHandlers.YourGPTNative.postMessage(event.data);
+        }
+    });
 
-            window.nativeBridge = {
-                sendMessage: function(message) {
-                    window.postMessage({ type: 'native:sendMessage', payload: message }, '*');
-                },
-                setUserContext: function(context) {
-                    window.postMessage({ type: 'native:setUserContext', payload: context }, '*');
-                }
-            };
-        """
-        
+    window.nativeBridge = {
+        sendMessage: function(message) {
+            window.postMessage({ type: 'native:sendMessage', payload: message }, '*');
+        },
+        setUserContext: function(context) {
+            window.postMessage({ type: 'native:setUserContext', payload: context }, '*');
+        }
+    };
+
+    document.addEventListener('click', function(event) {
+        if (event.target && event.target.classList && event.target.classList.contains('widget-close-button')) {
+            window.webkit.messageHandlers.YourGPTNative.postMessage({
+                type: 'chatbot-close',
+                source: 'widget-close-button'
+            });
+        }
+    });
+
+    console.log('YourGPT native bridge initialized');
+})();
+"""
+
         webView.evaluateJavaScript(script) { _, error in
             if let error = error {
-                print("Error injecting JavaScript: \(error)")
+                print("❌ Error injecting JavaScript: \(error)")
+            } else {
+                print("✅ JavaScript injected successfully")
             }
         }
     }
@@ -419,6 +466,20 @@ public class YourGPTChatbotViewController: UIViewController {
         }
     }
     
+    // MARK: - Bottom Sheet Dismissal
+    
+    /// Dismisses the bottom sheet when the widget sends a 'chatbot-close' postMessage.
+    /// This method is called automatically when the widget requests to close itself.
+    private func dismissBottomSheet() {
+        print("🔴 Dismissing bottom sheet...")
+        // Dismiss the current view controller (which is the bottom sheet)
+        dismiss(animated: true) { [weak self] in
+            print("🔴 Bottom sheet dismissed successfully")
+            // Notify delegate that chatbot was closed
+            self?.delegate?.chatbotDidClose()
+        }
+    }
+    
     // MARK: - Error Handling
     
     @objc private func retryConnection() {
@@ -482,6 +543,13 @@ extension YourGPTChatbotViewController: WKScriptMessageHandler {
             delegate?.chatbotDidOpen()
         case "chat:closed", "widget:closed":
             delegate?.chatbotDidClose()
+        case "chatbot-close":
+            // Close the bottom sheet when widget requests it (from X icon or other close actions)
+            let source = body["source"] as? String ?? "unknown"
+            print("🔴 Received chatbot-close message from widget (source: \(source))")
+            DispatchQueue.main.async { [weak self] in
+                self?.dismissBottomSheet()
+            }
             
         // Connection events
         case "connection:established":

@@ -79,7 +79,7 @@ class ViewController: UIViewController {
     private func initializeSDK() {
         Task {
             do {
-                try await YourGPTWrapper.shared.initializeSDK(widgetUid: "widget-uid")
+                try await YourGPTWrapper.shared.initializeSDK()
             } catch {
                 await MainActor.run {
                     self.showAlert(title: "SDK Error", message: error.localizedDescription)

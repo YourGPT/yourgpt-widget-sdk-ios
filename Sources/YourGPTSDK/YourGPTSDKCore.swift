@@ -1,10 +1,7 @@
 import Foundation
 import Combine
 
-public enum YourGPTTheme: String, CaseIterable {
-    case light = "light"
-    case dark = "dark"
-}
+// Theme support removed as optional and not required
 
 public enum YourGPTConnectionState: String, CaseIterable {
     case disconnected = "disconnected"
@@ -108,15 +105,27 @@ public class YourGPTSDKCore: ObservableObject {
         guard let config = config else {
             throw YourGPTError.notInitialized
         }
-
+        
         guard isReady else {
             throw YourGPTError.notReady
         }
-
-        guard let url = config.buildWidgetURL() else {
+        
+        // Create config with additional params
+        var customParams = config.customParams
+        for (key, value) in additionalParams {
+            customParams[key] = value
+        }
+        
+        let configWithParams = YourGPTConfig(
+            widgetUid: config.widgetUid,
+            debug: config.debug,
+            customParams: customParams
+        )
+        
+        guard let url = configWithParams.buildWidgetURL() else {
             throw YourGPTError.invalidURL
         }
-
+        
         return url
     }
     
@@ -163,8 +172,9 @@ public class YourGPTSDKCore: ObservableObject {
     }
     
     private func log(_ message: String) {
-        // Logging disabled - can be enabled for debugging
-        // print("[YourGPTSDK] \(message)")
+        if config?.debug == true {
+            print("[YourGPTSDK] \(message)")
+        }
     }
     
     public func destroy() {

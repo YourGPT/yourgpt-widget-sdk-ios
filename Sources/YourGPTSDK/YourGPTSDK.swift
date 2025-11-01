@@ -9,12 +9,12 @@ public struct YourGPTSDK {
         try await core.initialize(config: config)
     }
     
-    public static func createChatbotViewController() -> YourGPTChatbotViewController {
-        guard let config = core.currentConfig else {
-            fatalError("SDK not initialized. Call YourGPTSDK.initialize(config:) first.")
-        }
-
-        return YourGPTChatbotViewController(widgetUid: config.widgetUid)
+    public static func createChatbotViewController(
+        widgetUid: String,
+    ) -> YourGPTChatbotViewController {
+        return YourGPTChatbotViewController(
+            widgetUid: widgetUid
+        )
     }
     
     public static func setUserContext(_ context: [String: Any]) async {
