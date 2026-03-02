@@ -18,10 +18,8 @@ public class YourGPTChatbotViewController: UIViewController {
     public weak var delegate: YourGPTChatbotDelegate?
     
     private let widgetUid: String
-    private let userId: String?
-    private let authToken: String?
-    private let theme: YourGPTTheme
-    
+    private let customParams: [String: String]
+
     private var webView: WKWebView!
     private var webViewConfiguration: WKWebViewConfiguration!
     private let sdk = YourGPTSDKCore.shared
@@ -40,14 +38,10 @@ public class YourGPTChatbotViewController: UIViewController {
     
     public init(
         widgetUid: String,
-        userId: String? = nil,
-        authToken: String? = nil,
-        theme: YourGPTTheme = .light
+        customParams: [String: String] = [:]
     ) {
         self.widgetUid = widgetUid
-        self.userId = userId
-        self.authToken = authToken
-        self.theme = theme
+        self.customParams = customParams
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -116,10 +110,8 @@ public class YourGPTChatbotViewController: UIViewController {
         
         let config = YourGPTConfig(
             widgetUid: widgetUid,
-            userId: userId,
-            authToken: authToken,
-            theme: theme,
-            debug: true
+            debug: true,
+            customParams: customParams
         )
         
         Task {
@@ -324,25 +316,46 @@ public class YourGPTChatbotViewController: UIViewController {
     
     private func injectJavaScript() {
         let script = """
-            window.addEventListener('message', function(event) {
-                if (event.data && typeof event.data === 'object') {
-                    window.webkit.messageHandlers.YourGPTNative.postMessage(event.data);
-                }
+(function() {
+    window.addEventListener('message', function(event) {
+        console.log('Message received:', event.data);
+        if (event.data === 'chatbot-close') {
+            window.webkit.messageHandlers.YourGPTNative.postMessage({
+                type: 'chatbot-close',
+                source: 'widget'
             });
+        } else if (event.data && typeof event.data === 'object') {
+            window.webkit.messageHandlers.YourGPTNative.postMessage(event.data);
+        }
+    });
 
-            window.nativeBridge = {
-                sendMessage: function(message) {
-                    window.postMessage({ type: 'native:sendMessage', payload: message }, '*');
-                },
-                setUserContext: function(context) {
-                    window.postMessage({ type: 'native:setUserContext', payload: context }, '*');
-                }
-            };
-        """
-        
+    window.nativeBridge = {
+        sendMessage: function(message) {
+            window.postMessage({ type: 'native:sendMessage', payload: message }, '*');
+        },
+        setUserContext: function(context) {
+            window.postMessage({ type: 'native:setUserContext', payload: context }, '*');
+        }
+    };
+
+    document.addEventListener('click', function(event) {
+        if (event.target && event.target.classList && event.target.classList.contains('widget-close-button')) {
+            window.webkit.messageHandlers.YourGPTNative.postMessage({
+                type: 'chatbot-close',
+                source: 'widget-close-button'
+            });
+        }
+    });
+
+    console.log('YourGPT native bridge initialized');
+})();
+"""
+
         webView.evaluateJavaScript(script) { _, error in
             if let error = error {
-                print("Error injecting JavaScript: \(error)")
+                print("❌ Error injecting JavaScript: \(error)")
+            } else {
+                print("✅ JavaScript injected successfully")
             }
         }
     }
@@ -457,6 +470,39 @@ public class YourGPTChatbotViewController: UIViewController {
         }
     }
     
+    // MARK: - Session Navigation
+
+    private func navigateToSessionIfNeeded() {
+        guard let sessionUid = customParams["session_uid"] else { return }
+
+        let script = """
+        (function() {
+            window.postMessage({
+                type: 'open_session',
+                payload: {
+                    session_uid: '\(sessionUid)'
+                }
+            }, '*');
+        })();
+        """
+
+        webView.evaluateJavaScript(script, completionHandler: nil)
+    }
+
+    // MARK: - Bottom Sheet Dismissal
+    
+    /// Dismisses the bottom sheet when the widget sends a 'chatbot-close' postMessage.
+    /// This method is called automatically when the widget requests to close itself.
+    private func dismissBottomSheet() {
+        print("🔴 Dismissing bottom sheet...")
+        // Dismiss the current view controller (which is the bottom sheet)
+        dismiss(animated: true) { [weak self] in
+            print("🔴 Bottom sheet dismissed successfully")
+            // Notify delegate that chatbot was closed
+            self?.delegate?.chatbotDidClose()
+        }
+    }
+    
     // MARK: - Error Handling
     
     @objc private func retryConnection() {
@@ -471,13 +517,22 @@ extension YourGPTChatbotViewController: WKNavigationDelegate {
     
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         delegate?.chatbotDidStartLoading()
+        YourGPTSDKCore.shared.eventListener?.onLoadingStarted()
     }
-    
+
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         hideLoadingView()
         hideErrorView()
         injectJavaScript()
+
+        // Register APNs token with backend via JS bridge
+        YourGPTNotificationClient.shared.registerTokenViaWebView(webView)
+
+        // Navigate to specific session if opened from notification
+        navigateToSessionIfNeeded()
+
         delegate?.chatbotDidFinishLoading()
+        YourGPTSDKCore.shared.eventListener?.onLoadingFinished()
     }
     
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -502,25 +557,36 @@ extension YourGPTChatbotViewController: WKScriptMessageHandler {
               let type = body["type"] as? String else {
             return
         }
-        
+
+        let listener = YourGPTSDKCore.shared.eventListener
+
         switch type {
         // Message events
         case "message:received", "message:new":
             if let payload = body["payload"] as? [String: Any] {
                 delegate?.chatbotDidReceiveMessage(payload)
+                listener?.onMessageReceived(payload)
             }
         case "message:sent":
             if let payload = body["payload"] as? [String: Any] {
                 print("📤 Message sent: \(payload)")
-                // Could add delegate method for message sent if needed
             }
-            
+
         // Chat lifecycle events
         case "chat:opened", "widget:opened":
             delegate?.chatbotDidOpen()
+            listener?.onChatOpened()
         case "chat:closed", "widget:closed":
             delegate?.chatbotDidClose()
-            
+            listener?.onChatClosed()
+        case "chatbot-close":
+            let source = body["source"] as? String ?? "unknown"
+            print("🔴 Received chatbot-close message from widget (source: \(source))")
+            listener?.onChatClosed()
+            DispatchQueue.main.async { [weak self] in
+                self?.dismissBottomSheet()
+            }
+
         // Connection events
         case "connection:established":
             print("🔗 Connection established")
@@ -528,44 +594,48 @@ extension YourGPTChatbotViewController: WKScriptMessageHandler {
             print("📡 Connection lost")
             if let payload = body["payload"] as? [String: Any],
                let reason = payload["reason"] as? String {
-                delegate?.chatbotDidFailWithError(YourGPTError.webViewError("Connection lost: \(reason)"))
+                let errorMsg = "Connection lost: \(reason)"
+                delegate?.chatbotDidFailWithError(YourGPTError.webViewError(errorMsg))
+                listener?.onError(errorMsg)
             }
         case "connection:restored":
             print("🔄 Connection restored")
-            
+
         // User interaction events
         case "user:typing":
             print("⌨️ User is typing")
         case "user:stopped_typing":
             print("✋ User stopped typing")
-            
+
         // Escalation events
         case "escalation:to_human":
             if let payload = body["payload"] as? [String: Any] {
                 print("👨‍💼 Escalated to human: \(payload)")
-                // Could add specific delegate method for escalation
             }
         case "escalation:resolved":
             print("✅ Escalation resolved")
-            
+
         // Error events
         case "error:occurred":
             if let payload = body["payload"] as? [String: Any],
                let errorMessage = payload["message"] as? String {
                 delegate?.chatbotDidFailWithError(YourGPTError.webViewError(errorMessage))
+                listener?.onError(errorMessage)
             }
         case "error:network":
             if let payload = body["payload"] as? [String: Any],
                let errorMessage = payload["message"] as? String {
-                delegate?.chatbotDidFailWithError(YourGPTError.webViewError("Network error: \(errorMessage)"))
+                let msg = "Network error: \(errorMessage)"
+                delegate?.chatbotDidFailWithError(YourGPTError.webViewError(msg))
+                listener?.onError(msg)
             }
-            
+
         // SDK lifecycle events
         case "sdk:initialized":
             print("🚀 SDK initialized in WebView")
         case "webview:loaded":
             print("📱 WebView content loaded")
-            
+
         default:
             print("🔍 Unhandled message type: \(type)")
             break

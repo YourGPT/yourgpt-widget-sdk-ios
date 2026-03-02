@@ -150,7 +150,6 @@ The app automatically sends demo data to the widget:
 ```swift
 // Session Data
 {
-  "userId": "demo-user-123",
   "plan": "premium",
   "sessionStart": "2024-01-13T10:30:00Z",
   "features": ["ai-actions", "support-chat", "escalation"],

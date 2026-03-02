@@ -1,10 +1,7 @@
 import Foundation
 import Combine
 
-public enum YourGPTTheme: String, CaseIterable {
-    case light = "light"
-    case dark = "dark"
-}
+// Theme support removed as optional and not required
 
 public enum YourGPTConnectionState: String, CaseIterable {
     case disconnected = "disconnected"
@@ -41,7 +38,11 @@ public class YourGPTSDKCore: ObservableObject {
     
     private var config: YourGPTConfig?
     private var eventListeners: [String: [(Any?) -> Void]] = [:]
-    
+
+    /// Global event listener for SDK and notification events.
+    /// Set via `YourGPTSDK.setEventListener(_:)`.
+    public var eventListener: YourGPTEventListener?
+
     private init() {}
     
     public func initialize(config: YourGPTConfig) async throws {
@@ -114,19 +115,7 @@ public class YourGPTSDKCore: ObservableObject {
         }
         
         // Create config with additional params
-        var customParams = config.customParams
-        for (key, value) in additionalParams {
-            customParams[key] = value
-        }
-        
-        let configWithParams = YourGPTConfig(
-            widgetUid: config.widgetUid,
-            userId: config.userId,
-            authToken: config.authToken,
-            theme: config.theme,
-            debug: config.debug,
-            customParams: customParams
-        )
+        let configWithParams = config.withParams(additionalParams)
         
         guard let url = configWithParams.buildWidgetURL() else {
             throw YourGPTError.invalidURL
@@ -188,6 +177,7 @@ public class YourGPTSDKCore: ObservableObject {
         config = nil
         state = YourGPTSDKState()
         eventListeners.removeAll()
+        eventListener = nil
     }
 }
 

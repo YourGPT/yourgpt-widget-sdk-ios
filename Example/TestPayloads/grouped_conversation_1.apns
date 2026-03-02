@@ -1,0 +1,15 @@
+{
+    "Simulator Target Bundle": "com.yourgpt.example",
+    "aps": {
+        "alert": {
+            "title": "Support",
+            "body": "Thanks for reaching out! Let me check that for you."
+        },
+        "sound": "default",
+        "badge": 1,
+        "category": "chat_message"
+    },
+    "widget_uid": "cad24e4c-6ad9-41ef-b535-3731b48dfa71",
+    "project_uid": "test-project-001",
+    "session_uid": "session-group-456"
+}
