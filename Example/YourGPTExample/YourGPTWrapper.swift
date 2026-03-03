@@ -14,7 +14,7 @@ class YourGPTWrapper: NSObject {
     private var bottomSheetController: BottomSheetChatbotViewController?
 
     // Configuration
-    static let widgetUid = "69dd8b5d-d4bf-444c-a40f-732d15248ae9" // Required: Your widget UID from YourGPT dashboard
+    static let widgetUid = "your-widget-uid" // Required: Your widget UID from YourGPT dashboard
 
     // State observer
     var onStateChange: ((YourGPTSDKState) -> Void)?

@@ -17,7 +17,7 @@ public struct YourGPTSDKConfig {
     /// Widget API endpoint configuration
     public struct Endpoints {
         /// Base widget URL - DO NOT CHANGE without coordination
-        public static let widgetBase = "https://dev-widget.yourgpt.ai"
+        public static let widgetBase = "https://widget.yourgpt.ai"
         
         /// Constructs the full widget URL with the provided widget UID
         /// Format: https://widget.yourgpt.ai/{widgetUid}
