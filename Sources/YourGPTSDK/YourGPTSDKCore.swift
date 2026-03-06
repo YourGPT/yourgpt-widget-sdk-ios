@@ -38,7 +38,11 @@ public class YourGPTSDKCore: ObservableObject {
     
     private var config: YourGPTConfig?
     private var eventListeners: [String: [(Any?) -> Void]] = [:]
-    
+
+    /// Global event listener for SDK and notification events.
+    /// Set via `YourGPTSDK.setEventListener(_:)`.
+    public var eventListener: YourGPTEventListener?
+
     private init() {}
     
     public func initialize(config: YourGPTConfig) async throws {
@@ -111,16 +115,7 @@ public class YourGPTSDKCore: ObservableObject {
         }
         
         // Create config with additional params
-        var customParams = config.customParams
-        for (key, value) in additionalParams {
-            customParams[key] = value
-        }
-        
-        let configWithParams = YourGPTConfig(
-            widgetUid: config.widgetUid,
-            debug: config.debug,
-            customParams: customParams
-        )
+        let configWithParams = config.withParams(additionalParams)
         
         guard let url = configWithParams.buildWidgetURL() else {
             throw YourGPTError.invalidURL
@@ -182,6 +177,7 @@ public class YourGPTSDKCore: ObservableObject {
         config = nil
         state = YourGPTSDKState()
         eventListeners.removeAll()
+        eventListener = nil
     }
 }
 

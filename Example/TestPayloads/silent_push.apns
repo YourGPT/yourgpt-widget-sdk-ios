@@ -1,0 +1,11 @@
+{
+    "Simulator Target Bundle": "com.yourgpt.example",
+    "aps": {
+        "content-available": 1
+    },
+    "title": "Support",
+    "body": "We received your request and will get back to you shortly.",
+    "widget_uid": "cad24e4c-6ad9-41ef-b535-3731b48dfa71",
+    "project_uid": "test-project-001",
+    "session_uid": "session-abc-123"
+}

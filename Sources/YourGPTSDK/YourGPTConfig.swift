@@ -1,5 +1,16 @@
 import Foundation
 
+/// Notification handling modes.
+/// Maps to Android's NotificationMode enum.
+public enum NotificationMode: String {
+    /// Automatically handle everything - easiest integration.
+    case minimalist
+    /// Allow custom handling with callbacks.
+    case advanced
+    /// Disable notifications completely.
+    case disabled
+}
+
 /// YourGPT SDK Configuration Constants
 public struct YourGPTSDKConfig {
     
@@ -48,15 +59,35 @@ public struct YourGPTConfig {
     public let widgetUid: String
     public let debug: Bool
     public let customParams: [String: String]
-    
+
+    /// Whether push notifications are enabled. Default: false (opt-in).
+    public let enableNotifications: Bool
+
+    /// Notification handling mode. Default: .minimalist.
+    public let notificationMode: NotificationMode
+
+    /// Whether to automatically register the APNs token. Default: true.
+    public let autoRegisterToken: Bool
+
+    /// Custom notification appearance/behavior configuration.
+    public let notificationConfig: YourGPTNotificationConfig?
+
     public init(
         widgetUid: String,
         debug: Bool = YourGPTSDKConfig.Defaults.debug,
-        customParams: [String: String] = [:]
+        customParams: [String: String] = [:],
+        enableNotifications: Bool = false,
+        notificationMode: NotificationMode = .minimalist,
+        autoRegisterToken: Bool = true,
+        notificationConfig: YourGPTNotificationConfig? = nil
     ) {
         self.widgetUid = widgetUid
         self.debug = debug
         self.customParams = customParams
+        self.enableNotifications = enableNotifications
+        self.notificationMode = notificationMode
+        self.autoRegisterToken = autoRegisterToken
+        self.notificationConfig = notificationConfig
     }
     
     /// Generates query parameters for the widget URL
@@ -85,6 +116,37 @@ public struct YourGPTConfig {
         return YourGPTSDKConfig.Endpoints.widgetURL(
             for: widgetUid,
             queryParams: toQueryItems()
+        )
+    }
+
+    /// Returns a new config with additional custom parameters merged in.
+    public func withParams(_ additionalParams: [String: String]) -> YourGPTConfig {
+        var mergedParams = customParams
+        mergedParams.merge(additionalParams) { _, new in new }
+        return YourGPTConfig(
+            widgetUid: widgetUid,
+            debug: debug,
+            customParams: mergedParams,
+            enableNotifications: enableNotifications,
+            notificationMode: notificationMode,
+            autoRegisterToken: autoRegisterToken,
+            notificationConfig: notificationConfig
+        )
+    }
+
+    /// Returns a new config with updated notification settings.
+    public func withNotifications(
+        enabled: Bool,
+        config: YourGPTNotificationConfig? = nil
+    ) -> YourGPTConfig {
+        return YourGPTConfig(
+            widgetUid: widgetUid,
+            debug: debug,
+            customParams: customParams,
+            enableNotifications: enabled,
+            notificationMode: notificationMode,
+            autoRegisterToken: autoRegisterToken,
+            notificationConfig: config ?? notificationConfig
         )
     }
 }

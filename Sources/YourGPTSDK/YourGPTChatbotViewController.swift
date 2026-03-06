@@ -18,7 +18,8 @@ public class YourGPTChatbotViewController: UIViewController {
     public weak var delegate: YourGPTChatbotDelegate?
     
     private let widgetUid: String
-    
+    private let customParams: [String: String]
+
     private var webView: WKWebView!
     private var webViewConfiguration: WKWebViewConfiguration!
     private let sdk = YourGPTSDKCore.shared
@@ -36,9 +37,11 @@ public class YourGPTChatbotViewController: UIViewController {
     // MARK: - Initialization
     
     public init(
-        widgetUid: String
+        widgetUid: String,
+        customParams: [String: String] = [:]
     ) {
         self.widgetUid = widgetUid
+        self.customParams = customParams
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -107,7 +110,8 @@ public class YourGPTChatbotViewController: UIViewController {
         
         let config = YourGPTConfig(
             widgetUid: widgetUid,
-            debug: true
+            debug: true,
+            customParams: customParams
         )
         
         Task {
@@ -466,6 +470,25 @@ public class YourGPTChatbotViewController: UIViewController {
         }
     }
     
+    // MARK: - Session Navigation
+
+    private func navigateToSessionIfNeeded() {
+        guard let sessionUid = customParams["session_uid"] else { return }
+
+        let script = """
+        (function() {
+            window.postMessage({
+                type: 'open_session',
+                payload: {
+                    session_uid: '\(sessionUid)'
+                }
+            }, '*');
+        })();
+        """
+
+        webView.evaluateJavaScript(script, completionHandler: nil)
+    }
+
     // MARK: - Bottom Sheet Dismissal
     
     /// Dismisses the bottom sheet when the widget sends a 'chatbot-close' postMessage.
@@ -494,13 +517,22 @@ extension YourGPTChatbotViewController: WKNavigationDelegate {
     
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         delegate?.chatbotDidStartLoading()
+        YourGPTSDKCore.shared.eventListener?.onLoadingStarted()
     }
-    
+
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         hideLoadingView()
         hideErrorView()
         injectJavaScript()
+
+        // Register APNs token with backend via JS bridge
+        YourGPTNotificationClient.shared.registerTokenViaWebView(webView)
+
+        // Navigate to specific session if opened from notification
+        navigateToSessionIfNeeded()
+
         delegate?.chatbotDidFinishLoading()
+        YourGPTSDKCore.shared.eventListener?.onLoadingFinished()
     }
     
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -525,32 +557,36 @@ extension YourGPTChatbotViewController: WKScriptMessageHandler {
               let type = body["type"] as? String else {
             return
         }
-        
+
+        let listener = YourGPTSDKCore.shared.eventListener
+
         switch type {
         // Message events
         case "message:received", "message:new":
             if let payload = body["payload"] as? [String: Any] {
                 delegate?.chatbotDidReceiveMessage(payload)
+                listener?.onMessageReceived(payload)
             }
         case "message:sent":
             if let payload = body["payload"] as? [String: Any] {
                 print("📤 Message sent: \(payload)")
-                // Could add delegate method for message sent if needed
             }
-            
+
         // Chat lifecycle events
         case "chat:opened", "widget:opened":
             delegate?.chatbotDidOpen()
+            listener?.onChatOpened()
         case "chat:closed", "widget:closed":
             delegate?.chatbotDidClose()
+            listener?.onChatClosed()
         case "chatbot-close":
-            // Close the bottom sheet when widget requests it (from X icon or other close actions)
             let source = body["source"] as? String ?? "unknown"
             print("🔴 Received chatbot-close message from widget (source: \(source))")
+            listener?.onChatClosed()
             DispatchQueue.main.async { [weak self] in
                 self?.dismissBottomSheet()
             }
-            
+
         // Connection events
         case "connection:established":
             print("🔗 Connection established")
@@ -558,44 +594,48 @@ extension YourGPTChatbotViewController: WKScriptMessageHandler {
             print("📡 Connection lost")
             if let payload = body["payload"] as? [String: Any],
                let reason = payload["reason"] as? String {
-                delegate?.chatbotDidFailWithError(YourGPTError.webViewError("Connection lost: \(reason)"))
+                let errorMsg = "Connection lost: \(reason)"
+                delegate?.chatbotDidFailWithError(YourGPTError.webViewError(errorMsg))
+                listener?.onError(errorMsg)
             }
         case "connection:restored":
             print("🔄 Connection restored")
-            
+
         // User interaction events
         case "user:typing":
             print("⌨️ User is typing")
         case "user:stopped_typing":
             print("✋ User stopped typing")
-            
+
         // Escalation events
         case "escalation:to_human":
             if let payload = body["payload"] as? [String: Any] {
                 print("👨‍💼 Escalated to human: \(payload)")
-                // Could add specific delegate method for escalation
             }
         case "escalation:resolved":
             print("✅ Escalation resolved")
-            
+
         // Error events
         case "error:occurred":
             if let payload = body["payload"] as? [String: Any],
                let errorMessage = payload["message"] as? String {
                 delegate?.chatbotDidFailWithError(YourGPTError.webViewError(errorMessage))
+                listener?.onError(errorMessage)
             }
         case "error:network":
             if let payload = body["payload"] as? [String: Any],
                let errorMessage = payload["message"] as? String {
-                delegate?.chatbotDidFailWithError(YourGPTError.webViewError("Network error: \(errorMessage)"))
+                let msg = "Network error: \(errorMessage)"
+                delegate?.chatbotDidFailWithError(YourGPTError.webViewError(msg))
+                listener?.onError(msg)
             }
-            
+
         // SDK lifecycle events
         case "sdk:initialized":
             print("🚀 SDK initialized in WebView")
         case "webview:loaded":
             print("📱 WebView content loaded")
-            
+
         default:
             print("🔍 Unhandled message type: \(type)")
             break
